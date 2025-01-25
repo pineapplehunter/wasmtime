@@ -951,6 +951,17 @@ jobs:
       env:
         WASMTIME_SIGNALS_BASED_TRAPS: 1
 
+    - run: ./build.sh x86_64-unknown-none
+      working-directory: ./examples/min-platform
+      env:
+        MIN_PLATFORM_TEST_WASI: 1
+
+    - run: ./build.sh x86_64-unknown-none
+      working-directory: ./examples/min-platform
+      env:
+        MIN_PLATFORM_TEST_WASI: 1
+        WASMTIME_SIGNALS_BASED_TRAPS: 1
+
     # Add the `wasmtime-platform.h` file as a release artifact
     - uses: actions/upload-artifact@v4
       with:

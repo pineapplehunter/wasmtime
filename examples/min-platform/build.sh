@@ -26,6 +26,10 @@ if [ "$WASMTIME_SIGNALS_BASED_TRAPS" = "1" ]; then
   features="$features,custom"
 fi
 
+if [ "$MIN_PLATFORM_EXAMPLE_WASI" = "1" ]; then
+  features="$features,wasi"
+fi
+
 # First compile the C implementation of the platform symbols that will be
 # required by our embedding. This is the `embedding/wasmtime-platform.c` file.
 # The header file used is generated from Rust source code with the `cbindgen`

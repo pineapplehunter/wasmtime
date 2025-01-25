@@ -16,3 +16,4 @@ wasmtime = { workspace = true, features = ['cranelift', 'wat'] }
 
 [features]
 custom = []
+wasi = [ "wasmtime/component-model" ]

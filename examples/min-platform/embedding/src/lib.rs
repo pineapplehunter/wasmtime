@@ -10,6 +10,9 @@ use wasmtime::{Engine, Instance, Linker, Module, Store};
 mod allocator;
 mod panic;
 
+#[cfg(feature = "wasi")]
+mod wasi;
+
 /// Entrypoint of this embedding.
 ///
 /// This takes a number of parameters which are the precompiled module AOT
@@ -25,20 +28,38 @@ pub unsafe extern "C" fn run(
     simple_add_size: usize,
     simple_host_fn_module: *const u8,
     simple_host_fn_size: usize,
+    #[cfg(feature = "wasi")] wasi_component: *const u8,
+    #[cfg(feature = "wasi")] wasi_component_size: usize,
 ) -> usize {
     let buf = core::slice::from_raw_parts_mut(error_buf, error_size);
     let smoke = core::slice::from_raw_parts(smoke_module, smoke_size);
     let simple_add = core::slice::from_raw_parts(simple_add_module, simple_add_size);
     let simple_host_fn = core::slice::from_raw_parts(simple_host_fn_module, simple_host_fn_size);
     match run_result(smoke, simple_add, simple_host_fn) {
-        Ok(()) => 0,
+        Ok(()) => {}
         Err(e) => {
             let msg = format!("{e:?}");
             let len = buf.len().min(msg.len());
             buf[..len].copy_from_slice(&msg.as_bytes()[..len]);
-            len
+            return len;
         }
     }
+
+    #[cfg(feature = "wasi")]
+    {
+        let wasi_component = core::slice::from_raw_parts(wasi_component, wasi_component_size);
+        match wasi::run_wasi(wasi_component) {
+            Ok(()) => {}
+            Err(e) => {
+                let msg = format!("{e:?}");
+                let len = buf.len().min(msg.len());
+                buf[..len].copy_from_slice(&msg.as_bytes()[..len]);
+                return len;
+            }
+        }
+    }
+
+    0
 }
 
 fn run_result(
