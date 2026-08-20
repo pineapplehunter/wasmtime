@@ -1,30 +1,30 @@
 #![cfg_attr(all(target_os = "none", not(feature = "std")), no_std)]
 
-#[cfg(all(target_os = "none", not(feature = "std")))]
-use alloc::ffi::CString;
-#[cfg(all(target_os = "none", not(feature = "std")))]
-use alloc::format;
+use alloc::{ffi::CString, format};
 use anyhow::{Error, Result};
 #[cfg(all(target_os = "none", not(feature = "std")))]
 use core::alloc::GlobalAlloc;
 use wasmtime::{Engine, Module, Store};
 
-#[cfg(all(target_os = "none", not(feature = "std")))]
 extern crate alloc;
 
 mod c {
-    #[cfg(all(target_os = "none", not(feature = "std")))]
-    use core::ffi;
+    use core::ffi::c_char;
 
     unsafe extern "C" {
-        pub fn printf(format: *const u8, ...);
+        pub fn wasmtime_log(message: *const c_char);
         #[cfg(all(target_os = "none", not(feature = "std")))]
-        pub fn malloc(size: usize) -> *mut u8;
+        pub fn wasmtime_panic_handler(message: *const c_char) -> !;
         #[cfg(all(target_os = "none", not(feature = "std")))]
-        pub fn free(ptr: *mut u8);
+        pub fn wasmtime_alloc(size: usize) -> *mut u8;
         #[cfg(all(target_os = "none", not(feature = "std")))]
-        pub fn exit(status: ffi::c_int) -> !;
+        pub fn wasmtime_free(ptr: *mut u8);
     }
+}
+
+fn log(message: &'static [u8]) {
+    debug_assert_eq!(message.last(), Some(&0));
+    unsafe { c::wasmtime_log(message.as_ptr().cast()) }
 }
 
 #[unsafe(no_mangle)]
@@ -55,9 +55,7 @@ fn invoke_wasmtime_impl(data: &[u8]) -> Result<()> {
             "fd_write",
             |_a: i32, _fd: i32, _aa: i32, _ciovs: i32| {
                 // let buf = first_non_empty_ciovec(memory, ciovs)?;
-                unsafe {
-                    c::printf(b"fd_write called!\n\0".as_ptr());
-                };
+                log(b"fd_write called!\n\0");
                 Ok(0)
             },
         )
@@ -67,9 +65,7 @@ fn invoke_wasmtime_impl(data: &[u8]) -> Result<()> {
             "wasi_snapshot_preview1",
             "environ_get",
             |_a: i32, _b: i32| {
-                unsafe {
-                    c::printf(b"environ_get called!\n\0".as_ptr());
-                };
+                log(b"environ_get called!\n\0");
                 Ok(0)
             },
         )
@@ -79,9 +75,7 @@ fn invoke_wasmtime_impl(data: &[u8]) -> Result<()> {
             "wasi_snapshot_preview1",
             "environ_sizes_get",
             |_a: i32, _b: i32| {
-                unsafe {
-                    c::printf(b"environ_size_get called!\n\0".as_ptr());
-                };
+                log(b"environ_size_get called!\n\0");
                 Ok(1)
             },
         )
@@ -91,18 +85,16 @@ fn invoke_wasmtime_impl(data: &[u8]) -> Result<()> {
             "wasi_snapshot_preview1",
             "proc_exit",
             |_a: i32| -> wasmtime::Result<()> {
-                unsafe {
-                    c::printf(b"proc_exit called!\n\0".as_ptr());
-                };
+                log(b"proc_exit called!\n\0");
                 Err(wasmtime::Error::msg("exit"))
             },
         )
         .map_err(Error::msg)?;
     linker
         .func_wrap("env", "num", |a: i32| {
-            unsafe {
-                c::printf(b"num called with '%d'\n\0".as_ptr(), a);
-            };
+            if let Ok(message) = CString::new(format!("num called with '{a}'\n")) {
+                unsafe { c::wasmtime_log(message.as_ptr()) }
+            }
         })
         .map_err(Error::msg)?;
     linker.module(&mut store, "", &module).map_err(Error::msg)?;
@@ -138,7 +130,7 @@ unsafe impl GlobalAlloc for LibcAlloc {
         else {
             return core::ptr::null_mut();
         };
-        let raw = unsafe { c::malloc(size) };
+        let raw = unsafe { c::wasmtime_alloc(size) };
         if raw.is_null() {
             return raw;
         }
@@ -157,19 +149,18 @@ unsafe impl GlobalAlloc for LibcAlloc {
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: core::alloc::Layout) {
         let header_size = core::mem::size_of::<*mut u8>();
         let raw = unsafe { ptr.sub(header_size).cast::<*mut u8>().read_unaligned() };
-        unsafe { c::free(raw) };
+        unsafe { c::wasmtime_free(raw) };
     }
 }
 
 #[cfg(all(target_os = "none", not(feature = "std")))]
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
-    unsafe {
-        c::printf(b"\nPANIC!!!\n\0".as_ptr());
-        match CString::new(format!("{}", info)) {
-            Ok(message) => c::printf(b"%s\n\0".as_ptr(), message.as_ptr()),
-            _ => c::printf(b"unknown error while generating panic\n\0".as_ptr()),
-        }
-        c::exit(1);
-    }
+    let message = CString::new(format!("{info}"));
+    let message = message
+        .as_ref()
+        .map_or(c"unknown error while generating panic".as_ptr(), |s| {
+            s.as_ptr()
+        });
+    unsafe { c::wasmtime_panic_handler(message) }
 }
