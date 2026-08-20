@@ -5115,6 +5115,14 @@ name = "wasmtime-internal-wmemcheck"
 version = "49.0.0-dev"
 
 [[package]]
+name = "wasmtime-lib"
+version = "49.0.0-dev"
+dependencies = [
+ "anyhow",
+ "wasmtime",
+]
+
+[[package]]
 name = "wasmtime-publish"
 version = "0.0.0"
 dependencies = [
