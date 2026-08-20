@@ -12,6 +12,10 @@ use crate::{
     BuiltinFunctionSignatures, Reachability, TRAP_ARRAY_OUT_OF_BOUNDS, TRAP_GC_HEAP_CORRUPT,
     TRAP_TABLE_OUT_OF_BOUNDS,
 };
+use alloc::{string::ToString, vec::Vec};
+use core::iter::Peekable;
+use core::marker::PhantomData;
+use core::mem;
 use cranelift_codegen::cursor::FuncCursor;
 use cranelift_codegen::ir::condcodes::{FloatCC, IntCC};
 use cranelift_codegen::ir::immediates::{Ieee32, Ieee64, Imm64, V128Imm};
@@ -26,13 +30,14 @@ use cranelift_entity::{EntityRef, PrimaryMap, SecondaryMap};
 use cranelift_frontend::Variable;
 use cranelift_frontend::{FuncInstBuilder, FunctionBuilder};
 use smallvec::{SmallVec, smallvec};
-use std::iter::Peekable;
-use std::marker::PhantomData;
-use std::mem;
+#[cfg(feature = "std")]
+use std::collections::HashMap;
 use wasmparser::{
     BranchHint, FuncValidator, Operator, SectionLimitedIntoIter, WasmModuleResources,
 };
 use wasmtime_core::math::f64_cvt_to_int_bounds;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashMap;
 use wasmtime_environ::{
     BuiltinFunctionIndex, ComponentPC, ConstExpr, ConstOp, DataIndex, DefinedFuncIndex,
     DefinedGlobalIndex, DefinedTableIndex, ElemIndex, EngineOrModuleTypeIndex, FactInlineIntrinsic,
@@ -155,10 +160,7 @@ pub struct FuncEnvironment<'module_environment> {
     /// Translation state at the given point.
     pub(crate) stacks: FuncTranslationStacks,
 
-    ty_to_gc_layout: std::collections::HashMap<
-        wasmtime_environ::ModuleInternedTypeIndex,
-        wasmtime_environ::GcLayout,
-    >,
+    ty_to_gc_layout: HashMap<wasmtime_environ::ModuleInternedTypeIndex, wasmtime_environ::GcLayout>,
 
     gc_heap: Option<Heap>,
 
@@ -279,7 +281,7 @@ impl<'module_environment> FuncEnvironment<'module_environment> {
             entities: WasmEntities::default(),
             stacks: FuncTranslationStacks::new(),
 
-            ty_to_gc_layout: std::collections::HashMap::new(),
+            ty_to_gc_layout: HashMap::new(),
             gc_heap: None,
 
             heaps: PrimaryMap::default(),

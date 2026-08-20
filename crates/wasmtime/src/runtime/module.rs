@@ -152,7 +152,7 @@ struct ModuleInner {
     memory_images: OnceLock<Option<ModuleMemoryImages>>,
 
     /// Flag indicating whether this module can be serialized or not.
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     serializable: bool,
 
     /// Runtime offset information for `VMContext`.
@@ -243,7 +243,7 @@ impl Module {
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn new(engine: &Engine, bytes: impl AsRef<[u8]>) -> Result<Module> {
         crate::CodeBuilder::new(engine)
             .wasm_binary_or_text(bytes.as_ref(), None)?
@@ -278,7 +278,7 @@ impl Module {
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(all(feature = "std", any(feature = "cranelift", feature = "winch")))]
+    #[cfg(all(feature = "std", any(has_cranelift, feature = "winch")))]
     pub fn from_file(engine: &Engine, file: impl AsRef<Path>) -> Result<Module> {
         crate::CodeBuilder::new(engine)
             .wasm_binary_or_text_file(file.as_ref())?
@@ -316,7 +316,7 @@ impl Module {
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn from_binary(engine: &Engine, binary: &[u8]) -> Result<Module> {
         crate::CodeBuilder::new(engine)
             .wasm_binary(binary, None)?
@@ -344,7 +344,7 @@ impl Module {
     /// This is because the file is mapped into memory and lazily loaded pages
     /// reflect the current state of the file, not necessarily the original
     /// state of the file.
-    #[cfg(all(feature = "std", any(feature = "cranelift", feature = "winch")))]
+    #[cfg(all(feature = "std", any(has_cranelift, feature = "winch")))]
     pub unsafe fn from_trusted_file(engine: &Engine, file: impl AsRef<Path>) -> Result<Module> {
         let open_file = open_file_for_mmap(file.as_ref())?;
         let mmap = crate::runtime::vm::MmapVec::from_file(open_file)?;
@@ -554,7 +554,7 @@ impl Module {
                 code,
                 memory_images: OnceLock::new(),
                 module,
-                #[cfg(any(feature = "cranelift", feature = "winch"))]
+                #[cfg(any(has_cranelift, feature = "winch"))]
                 serializable,
                 offsets,
                 checksum,
@@ -616,7 +616,7 @@ impl Module {
     /// this method, but if a module is both instantiated and serialized then
     /// this method can be useful to get the serialized version without
     /// compiling twice.
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn serialize(&self) -> Result<Vec<u8>> {
         // The current representation of compiled modules within a compiled
         // component means that it cannot be serialized. The mmap returned here

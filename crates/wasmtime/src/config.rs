@@ -5,10 +5,11 @@ use bitflags::Flags;
 use core::fmt;
 use core::num::{NonZeroU32, NonZeroUsize};
 use core::str::FromStr;
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
+#[cfg(feature = "std")]
 use std::path::Path;
 pub use wasmparser::WasmFeatures;
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 use wasmtime_environ::FlagValue;
 use wasmtime_environ::{ConfigTunables, OperatorCost, OperatorCostStrategy, TripleExt, Tunables};
 
@@ -32,7 +33,7 @@ use wasmtime_fiber::RuntimeFiberStackCreator;
 pub use crate::runtime::code_memory::CustomCodeMemory;
 #[cfg(feature = "cache")]
 pub use wasmtime_cache::{Cache, CacheConfig};
-#[cfg(all(feature = "incremental-cache", feature = "cranelift"))]
+#[cfg(all(feature = "incremental-cache", has_cranelift))]
 pub use wasmtime_environ::CacheStore;
 pub use wasmtime_environ::Inlining;
 
@@ -157,7 +158,7 @@ pub enum RRConfig {
 /// applicable.
 #[derive(Clone)]
 pub struct Config {
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     compiler_config: Option<CompilerConfig>,
     target: Option<target_lexicon::Triple>,
     #[cfg(feature = "gc")]
@@ -204,34 +205,36 @@ pub struct Config {
 }
 
 /// User-provided configuration for the compiler.
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 #[derive(Debug, Clone)]
 struct CompilerConfig {
     strategy: Option<Strategy>,
     settings: crate::hash_map::HashMap<String, (String, UserSpecified)>,
     flags: crate::hash_map::HashMap<String, UserSpecified>,
-    #[cfg(all(feature = "incremental-cache", feature = "cranelift"))]
+    #[cfg(all(feature = "incremental-cache", has_cranelift))]
     cache_store: Option<Arc<dyn CacheStore>>,
+    #[cfg(feature = "std")]
     clif_dir: Option<std::path::PathBuf>,
     wmemcheck: bool,
 }
 
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 #[derive(Debug, Clone)]
 enum UserSpecified {
     Yes,
     No,
 }
 
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 impl CompilerConfig {
     fn new() -> Self {
         Self {
             strategy: Strategy::Auto.not_auto(),
             settings: Default::default(),
             flags: Default::default(),
-            #[cfg(all(feature = "incremental-cache", feature = "cranelift"))]
+            #[cfg(all(feature = "incremental-cache", has_cranelift))]
             cache_store: None,
+            #[cfg(feature = "std")]
             clif_dir: None,
             wmemcheck: false,
         }
@@ -258,7 +261,7 @@ impl CompilerConfig {
     }
 }
 
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 impl Default for CompilerConfig {
     fn default() -> Self {
         Self::new()
@@ -271,7 +274,7 @@ impl Config {
     pub fn new() -> Self {
         let mut ret = Self {
             tunables: ConfigTunables::default(),
-            #[cfg(any(feature = "cranelift", feature = "winch"))]
+            #[cfg(any(has_cranelift, feature = "winch"))]
             compiler_config: Some(CompilerConfig::default()),
             target: None,
             #[cfg(feature = "gc")]
@@ -322,13 +325,13 @@ impl Config {
         ret
     }
 
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub(crate) fn has_compiler(&self) -> bool {
         self.compiler_config.is_some()
     }
 
     #[track_caller]
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     fn compiler_config_mut(&mut self) -> &mut CompilerConfig {
         self.compiler_config.as_mut().expect(
             "cannot configure compiler settings for `Config`s \
@@ -365,7 +368,7 @@ impl Config {
     /// such a situation, especially when there are multiple Rust binaries in
     /// the same cargo workspace, and cargo's feature resolution enables the
     /// `"cranelift"` or `"winch"` features across the whole workspace.
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn enable_compiler(&mut self, enable: bool) -> &mut Self {
         match (enable, &self.compiler_config) {
             (true, Some(_)) | (false, None) => {}
@@ -414,7 +417,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(all(feature = "incremental-cache", feature = "cranelift"))]
+    #[cfg(all(feature = "incremental-cache", has_cranelift))]
     pub fn enable_incremental_compilation(
         &mut self,
         cache_store: Arc<dyn CacheStore>,
@@ -1426,7 +1429,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn strategy(&mut self, strategy: Strategy) -> &mut Self {
         self.compiler_config_mut().strategy = strategy.not_auto();
         self
@@ -1508,7 +1511,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn cranelift_debug_verifier(&mut self, enable: bool) -> &mut Self {
         let val = if enable { "true" } else { "false" };
         self.compiler_config_mut().settings.insert(
@@ -1526,7 +1529,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn cranelift_wasmtime_debug_checks(&mut self, enable: bool) -> &mut Self {
         unsafe { self.cranelift_flag_set("wasmtime_debug_checks", &enable.to_string()) }
     }
@@ -1542,7 +1545,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn cranelift_opt_level(&mut self, level: OptLevel) -> &mut Self {
         let val = match level {
             OptLevel::None => "none",
@@ -1569,7 +1572,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn cranelift_regalloc_algorithm(&mut self, algo: RegallocAlgorithm) -> &mut Self {
         let val = match algo {
             RegallocAlgorithm::Backtracking => "backtracking",
@@ -1599,7 +1602,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn cranelift_nan_canonicalization(&mut self, enable: bool) -> &mut Self {
         let val = if enable { "true" } else { "false" };
         self.compiler_config_mut().settings.insert(
@@ -1629,7 +1632,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub unsafe fn cranelift_flag_enable(&mut self, flag: &str) -> &mut Self {
         self.compiler_config_mut()
             .flags
@@ -1660,7 +1663,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub unsafe fn cranelift_flag_set(&mut self, name: &str, value: &str) -> &mut Self {
         self.compiler_config_mut()
             .settings
@@ -2325,7 +2328,7 @@ impl Config {
     /// # Panics
     ///
     /// Panics if this configuration's compiler was [disabled][Config::enable_compiler].
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn wmemcheck(&mut self, enable: bool) -> &mut Self {
         self.wmemcheck = enable;
         self.compiler_config_mut().wmemcheck = enable;
@@ -2434,7 +2437,7 @@ impl Config {
         #[allow(unused_mut, reason = "easier to avoid #[cfg]")]
         let mut unsupported = !features_known_to_wasmtime;
 
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         match self.compiler_config.as_ref().and_then(|c| c.strategy) {
             None | Some(Strategy::Cranelift) => {
                 // Pulley at this time fundamentally doesn't support the
@@ -2702,7 +2705,7 @@ impl Config {
         }
 
         // Inlining currently falls over with the `stack_switch` instruction.
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if features.contains(WasmFeatures::STACK_SWITCHING) {
             if let Some(inlining) = self.tunables.inlining
                 && inlining != Inlining::No
@@ -2725,7 +2728,7 @@ impl Config {
         }
 
         // If we're going to compile with winch, we must use the winch calling convention.
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         {
             tunables.winch_callable = self
                 .compiler_config
@@ -2930,7 +2933,7 @@ impl Config {
         })
     }
 
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub(crate) fn build_compiler(
         mut self,
         tunables: &mut Tunables,
@@ -2952,9 +2955,9 @@ impl Config {
             };
 
         let mut compiler = match self.compiler_config_mut().strategy {
-            #[cfg(feature = "cranelift")]
+            #[cfg(has_cranelift)]
             Some(Strategy::Cranelift) => wasmtime_cranelift::builder(target_for_builder)?,
-            #[cfg(not(feature = "cranelift"))]
+            #[cfg(not(has_cranelift))]
             Some(Strategy::Cranelift) => bail!("cranelift support not compiled in"),
             #[cfg(feature = "winch")]
             Some(Strategy::Winch) => wasmtime_winch::builder(target_for_builder)?,
@@ -2964,6 +2967,7 @@ impl Config {
             None | Some(Strategy::Auto) => unreachable!(),
         };
 
+        #[cfg(feature = "std")]
         if let Some(path) = &self.compiler_config_mut().clif_dir {
             compiler.clif_dir(path)?;
         }
@@ -3075,7 +3079,7 @@ impl Config {
         }
         *tunables = compiler.tunables().cloned().unwrap();
 
-        #[cfg(all(feature = "incremental-cache", feature = "cranelift"))]
+        #[cfg(all(feature = "incremental-cache", has_cranelift))]
         if let Some(cache_store) = &self.compiler_config_mut().cache_store {
             compiler.enable_incremental_compilation(cache_store.clone())?;
         }
@@ -3095,7 +3099,7 @@ impl Config {
     }
 
     /// Enables clif output when compiling a WebAssembly module.
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(all(feature = "std", any(has_cranelift, feature = "winch")))]
     pub fn emit_clif(&mut self, path: &Path) -> &mut Self {
         self.compiler_config_mut().clif_dir = Some(path.to_path_buf());
         self
@@ -3381,7 +3385,7 @@ impl Config {
                 bail!("Relaxed deterministic SIMD cannot be disabled when determinism is enforced");
             }
         }
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some((v, _)) = self
             .compiler_config
             .as_ref()
@@ -3470,7 +3474,7 @@ impl fmt::Debug for Config {
         }
 
         f.field("parallel_compilation", &self.parallel_compilation);
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         {
             f.field("compiler_config", &self.compiler_config);
         }
@@ -3507,12 +3511,12 @@ pub enum Strategy {
     Winch,
 }
 
-#[cfg(any(feature = "winch", feature = "cranelift"))]
+#[cfg(any(feature = "winch", has_cranelift))]
 impl Strategy {
     fn not_auto(&self) -> Option<Strategy> {
         match self {
             Strategy::Auto => {
-                if cfg!(feature = "cranelift") {
+                if cfg!(has_cranelift) {
                     Some(Strategy::Cranelift)
                 } else if cfg!(feature = "winch") {
                     Some(Strategy::Winch)
@@ -4887,7 +4891,7 @@ impl Engine {
 
     /// Returns the configured [`Config::cranelift_opt_level`] value.
     pub fn get_cranelift_opt_level(&self) -> Option<OptLevel> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             let flags = compiler.flags();
             let (_, FlagValue::Enum(opt)) = flags.iter().find(|(f, _)| *f == "opt_level")? else {
@@ -4905,7 +4909,7 @@ impl Engine {
 
     /// Returns the configured [`Config::cranelift_regalloc_algorithm`] value.
     pub fn get_cranelift_regalloc_algorithm(&self) -> Option<RegallocAlgorithm> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             let flags = compiler.flags();
             let (_, FlagValue::Enum(opt)) =
@@ -4924,9 +4928,9 @@ impl Engine {
 
     /// Returns the configured [`Config::strategy`] value.
     pub fn get_strategy(&self) -> Option<Strategy> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         return self.config().compiler_config.as_ref()?.strategy;
-        #[cfg(not(any(feature = "cranelift", feature = "winch")))]
+        #[cfg(not(any(has_cranelift, feature = "winch")))]
         return None;
     }
 
@@ -4940,7 +4944,7 @@ impl Engine {
 
     /// Returns the configured [`Config::cranelift_debug_verifier`] value.
     pub fn get_cranelift_debug_verifier(&self) -> Option<bool> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             let flags = compiler.flags();
             let (_, FlagValue::Bool(b)) = flags.iter().find(|(f, _)| *f == "enable_verifier")?
@@ -4959,7 +4963,7 @@ impl Engine {
 
     /// Returns the configured [`Config::native_unwind_info`] value.
     pub fn get_native_unwind_info(&self) -> Option<bool> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             let flags = compiler.flags();
             let (_, FlagValue::Bool(b)) = flags.iter().find(|(f, _)| *f == "unwind_info")? else {
@@ -5040,7 +5044,7 @@ impl Engine {
 
     /// Returns the configured [`Config::cranelift_nan_canonicalization`] value.
     pub fn get_cranelift_nan_canonicalization(&self) -> Option<bool> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             let flags = compiler.flags();
             let (_, FlagValue::Bool(b)) = flags
@@ -5094,7 +5098,7 @@ impl Engine {
 
     /// Returns the configured [`Config::target`] value.
     pub fn get_target(&self) -> Option<String> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(compiler) = self.compiler() {
             return Some(compiler.triple().to_string());
         }
@@ -5103,7 +5107,7 @@ impl Engine {
 
     /// Returns the enabled flags via [`Config::cranelift_flag_enable`].
     pub fn get_cranelift_flags_enabled(&self) -> impl Iterator<Item = &str> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(config) = &self.config().compiler_config {
             return config
                 .flags
@@ -5121,7 +5125,7 @@ impl Engine {
 
     /// Returns the enabled flags via [`Config::cranelift_flag_set`].
     pub fn get_cranelift_flags_set(&self) -> impl Iterator<Item = (&str, &str)> {
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         if let Some(config) = &self.config().compiler_config {
             return config
                 .settings

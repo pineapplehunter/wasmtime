@@ -18,6 +18,8 @@
 //! their imports and then generating a core wasm module to implement all of
 //! that.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::dfg::CoreDef;
 use crate::component::{
     Adapter, AdapterOptions as AdapterOptionsDfg, CanonicalAbiInfo, ComponentTypesBuilder,
@@ -30,6 +32,7 @@ use crate::{
     EntityRef, FuncIndex, GlobalIndex, IndexType, Memory, MemoryIndex, ModuleInternedTypeIndex,
     PrimaryMap, Trap, Tunables, WasmValType,
 };
+#[cfg(feature = "std")]
 use std::collections::HashMap;
 use wasm_encoder::*;
 use wasmparser::WasmFeatures;

@@ -115,9 +115,12 @@
 //! time this may want to be revisited if too many adapter modules are being
 //! created.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashSet;
 use crate::component::translate::*;
 use crate::fact;
 use crate::{EntityType, Memory};
+#[cfg(feature = "std")]
 use std::collections::HashSet;
 
 /// Metadata information about a fused adapter.
@@ -225,6 +228,7 @@ impl<'data> Translator<'_, 'data> {
             // transform `wasm` into `&'data [u8]` which is much easier to work
             // with here.
             let wasm = &*self.scope_vec.push(wasm);
+            #[cfg(feature = "std")]
             if log::log_enabled!(log::Level::Trace) {
                 match wasmprinter::print_bytes(wasm) {
                     Ok(s) => log::trace!("generated adapter module:\n{s}"),

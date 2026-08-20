@@ -5,8 +5,11 @@ use crate::debug::Compilation;
 use crate::debug::gc::build_dependencies;
 use cranelift_codegen::isa::TargetIsa;
 use gimli::{DwarfPackage, LittleEndian, Section, write};
+#[cfg(feature = "std")]
 use std::collections::HashSet;
 use synthetic::ModuleSyntheticUnit;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashSet;
 use wasmtime_environ::error::Error;
 use wasmtime_environ::{
     DefinedFuncIndex, ModuleTranslation, PrimaryMap, StaticModuleIndex, Tunables, prelude::*,

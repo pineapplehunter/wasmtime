@@ -1,6 +1,7 @@
-use std::ops::Range;
+use core::ops::Range;
 
 use crate::{Relocation, mach_reloc_to_reloc, mach_trap_to_trap};
+use alloc::{boxed::Box, vec::Vec};
 use cranelift_codegen::{
     Final, MachBufferFinalized, MachBufferFrameLayout, MachSrcLoc, ValueLabelsRanges, ir,
     isa::unwind::CfaUnwindInfo, isa::unwind::UnwindInfo,

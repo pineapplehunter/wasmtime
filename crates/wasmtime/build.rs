@@ -51,6 +51,10 @@ fn main() {
     custom_cfg("has_custom_fiber", has_custom_fiber);
     custom_cfg("has_custom_sync", has_custom_sync);
     custom_cfg("has_host_compiler_backend", has_host_compiler_backend);
+    custom_cfg(
+        "has_cranelift",
+        cfg!(feature = "cranelift") || cfg!(feature = "embedded-cranelift"),
+    );
     custom_cfg("gc_zeal", cfg("fuzzing"));
 
     // If this OS isn't supported and no debug-builtins or if Cranelift doesn't support

@@ -1,4 +1,5 @@
 use crate::{debug::Reader, translate::get_vmctx_value_label};
+use alloc::{string::String, vec::Vec};
 use core::fmt;
 use cranelift_codegen::{LabelValueLoc, ValueLabelsRanges, ir::ValueLabel, isa::TargetIsa};
 use gimli::{AttributeValue, LittleEndian, UnitRef, write};

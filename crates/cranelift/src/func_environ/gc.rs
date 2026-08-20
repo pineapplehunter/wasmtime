@@ -8,6 +8,7 @@ use crate::translate::{
 };
 use crate::trap::TranslateTrap;
 use crate::{Reachability, TRAP_GC_HEAP_CORRUPT, TRAP_INTERNAL_ASSERT};
+use alloc::{boxed::Box, string::ToString};
 use cranelift_codegen::ir::{BlockArg, ExceptionTableData, ExceptionTableItem};
 use cranelift_codegen::{
     cursor::FuncCursor,

@@ -27,16 +27,24 @@
 //! translation where the dataflow performed there allows identification of
 //! fused adapters, what arguments make their way to core wasm modules, etc.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::*;
 use crate::error::Result;
 use crate::prelude::*;
 use crate::{EntityIndex, EntityRef, ModuleInternedTypeIndex, PrimaryMap, Trap, WasmValType};
+use core::hash::Hash;
+use core::ops::Index;
 use cranelift_entity::packed_option::PackedOption;
+#[cfg(feature = "std")]
 use indexmap::IndexMap;
+#[cfg(not(feature = "std"))]
+use indexmap::IndexMap as RawIndexMap;
 use info::LinearMemoryOptions;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::ops::Index;
+#[cfg(not(feature = "std"))]
+type IndexMap<K, V> = RawIndexMap<K, V, hashbrown::DefaultHashBuilder>;
 use wasmparser::component_types::ComponentCoreModuleTypeId;
 
 /// High-level representation of a component as a "data-flow graph".

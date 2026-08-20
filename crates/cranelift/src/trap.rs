@@ -1,6 +1,7 @@
 use crate::TRAP_INTERNAL_ASSERT;
 use crate::alias_region::AliasRegions;
 use crate::compiler::Compiler;
+use alloc::vec::Vec;
 use cranelift_codegen::cursor::FuncCursor;
 use cranelift_codegen::ir::condcodes::IntCC;
 use cranelift_codegen::ir::types::I8;

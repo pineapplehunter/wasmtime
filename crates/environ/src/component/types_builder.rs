@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::*;
 use crate::error::{Result, bail};
 use crate::prelude::*;
@@ -5,10 +7,11 @@ use crate::{
     EngineOrModuleTypeIndex, EntityType, ModuleTypes, ModuleTypesBuilder, PrimaryMap, TypeConvert,
     WasmHeapType,
 };
+use core::hash::Hash;
+use core::ops::Index;
 use cranelift_entity::EntityRef;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::ops::Index;
 use wasmparser::component_types::{
     ComponentAnyTypeId, ComponentCoreModuleTypeId, ComponentDefinedType, ComponentDefinedTypeId,
     ComponentEntityType, ComponentFuncTypeId, ComponentInstanceTypeId, ComponentTypeId,

@@ -13,7 +13,15 @@
 // See documentation in crates/wasmtime/src/runtime.rs for why this is
 // selectively enabled here.
 #![warn(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#![cfg_attr(all(feature = "embedded", not(feature = "std")), no_std)]
 
+#[cfg(not(any(feature = "std", feature = "embedded")))]
+compile_error!("either feature `std` or `embedded` must be enabled");
+
+#[macro_use]
+extern crate alloc;
+
+use alloc::vec::Vec;
 use cranelift_codegen::{
     FinalizedMachReloc, FinalizedRelocTarget, MachTrap, binemit,
     cursor::FuncCursor,

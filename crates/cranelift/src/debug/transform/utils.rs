@@ -1,4 +1,5 @@
 use crate::debug::Reader;
+use alloc::vec::Vec;
 
 use super::address_transform::AddressTransform;
 use super::expression::{CompiledExpression, FunctionFrameInfo};

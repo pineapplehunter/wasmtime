@@ -1,6 +1,7 @@
 //! Compilation support for the component model.
 
-use std::marker::PhantomData;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 use crate::alias_region::AliasRegions;
 use crate::func_environ::BuiltinFunctions;

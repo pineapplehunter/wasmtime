@@ -75,14 +75,17 @@ pub use object;
 
 pub use wasmparser;
 
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 mod compile;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 pub use crate::compile::*;
 
 #[cfg(feature = "component-model")]
 pub mod component;
-#[cfg(all(feature = "component-model", feature = "compile"))]
+#[cfg(all(
+    feature = "component-model",
+    any(feature = "compile", feature = "compile-core")
+))]
 pub mod fact;
 
 // Reexport all of these type-level since they're quite commonly used and it's

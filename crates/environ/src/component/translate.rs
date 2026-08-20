@@ -1,4 +1,6 @@
 use crate::Abi;
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::dfg::AbstractInstantiations;
 use crate::component::*;
 use crate::prelude::*;
@@ -7,12 +9,18 @@ use crate::{
     ModuleInternedTypeIndex, ModuleTranslation, ModuleTypesBuilder, PrimaryMap, ScopeVec, TagIndex,
     Tunables, TypeConvert, WasmHeapType, WasmResult, WasmValType,
 };
+use core::mem;
 use core::str::FromStr;
 use cranelift_entity::SecondaryMap;
 use cranelift_entity::packed_option::PackedOption;
+#[cfg(feature = "std")]
 use indexmap::IndexMap;
+#[cfg(not(feature = "std"))]
+use indexmap::IndexMap as RawIndexMap;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::mem;
+#[cfg(not(feature = "std"))]
+type IndexMap<K, V> = RawIndexMap<K, V, hashbrown::DefaultHashBuilder>;
 use wasmparser::component_types::{
     AliasableResourceId, ComponentCoreModuleTypeId, ComponentDefinedTypeId, ComponentEntityType,
     ComponentFuncTypeId, ComponentInstanceTypeId, ComponentValType,

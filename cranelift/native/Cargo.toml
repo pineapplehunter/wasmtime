@@ -16,9 +16,9 @@ cranelift-codegen = { workspace = true }
 target-lexicon = { workspace = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-libc = { workspace = true }
+libc = { version = "0.2.185", default-features = false }
 
 [features]
 default = ["std"]
-std = ["cranelift-codegen/std"]
+std = ["cranelift-codegen/std", "libc/std"]
 core = ["cranelift-codegen/core"]

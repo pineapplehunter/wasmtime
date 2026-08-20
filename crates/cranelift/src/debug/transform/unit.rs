@@ -10,12 +10,16 @@ use super::range_info_builder::RangeInfoBuilder;
 use super::synthetic::ModuleSyntheticUnit;
 use super::utils::{append_vmctx_info, resolve_die_ref};
 use crate::debug::{Compilation, Reader};
+use alloc::{string::String, vec::Vec};
 use cranelift_codegen::ir::Endianness;
 use cranelift_codegen::isa::TargetIsa;
 use gimli::AttributeValue;
 use gimli::write;
+#[cfg(feature = "std")]
 use std::collections::HashSet;
 use wasmtime_environ::StaticModuleIndex;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashSet;
 use wasmtime_environ::error::{Context, Error};
 use wasmtime_versioned_export_macros::versioned_stringify_ident;
 

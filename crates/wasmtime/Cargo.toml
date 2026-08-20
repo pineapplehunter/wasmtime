@@ -22,7 +22,7 @@ wasmtime-jit-debug = { workspace = true, optional = true }
 wasmtime-jit-icache-coherence = { workspace = true, optional = true }
 wasmtime-cache = { workspace = true, optional = true }
 wasmtime-fiber = { workspace = true, optional = true }
-wasmtime-cranelift = { workspace = true, optional = true, features = ['pulley'] }
+wasmtime-cranelift = { path = "../cranelift", version = "=49.0.0-dev", package = "wasmtime-internal-cranelift", default-features = false, optional = true, features = ['pulley'] }
 wasmtime-unwinder = { workspace = true, optional = true }
 wasmtime-winch = { workspace = true, optional = true }
 wasmtime-component-macro = { workspace = true, optional = true }
@@ -169,6 +169,14 @@ backtrace = ["std", "wasmtime-environ/backtrace"]
 # precompiled WebAssembly modules.
 cranelift = ["dep:wasmtime-cranelift", "std", "wasmtime-unwinder/cranelift"]
 
+# Enables Cranelift without pulling in the standard library. This is intended
+# for the repository's freestanding embedding example, not general use.
+embedded-cranelift = [
+  "dep:wasmtime-cranelift",
+  "wasmtime-cranelift/embedded",
+  "wasmtime-unwinder/cranelift",
+]
+
 # Enables support for Winch, the WebAssembly baseline compiler. The Winch compiler
 # strategy in `Config` will be available. It is currently in active development
 # and shouldn't be used in production applications.
@@ -300,7 +308,7 @@ gc-null = ["gc", "wasmtime-environ/gc-null"]
 gc-copying = ["gc", "wasmtime-environ/gc-copying"]
 
 # Enable runtime support for the WebAssembly threads proposal.
-threads = ["std"]
+threads = ["std", "wasmtime-environ/threads"]
 
 stack-switching = [
   "runtime",
@@ -321,6 +329,7 @@ addr2line = ["dep:addr2line", "dep:gimli", "std"]
 std = [
   'postcard/use-std',
   'wasmtime-environ/std',
+  'wasmtime-cranelift?/std',
   'wasmtime-core/std',
   'object/std',
   'once_cell',

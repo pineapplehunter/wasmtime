@@ -4,6 +4,10 @@ use cranelift_codegen::{
     cursor::FuncCursor,
     ir::{self, InstBuilder as _},
 };
+#[cfg(feature = "std")]
+use std::collections::HashMap;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashMap;
 use wasmtime_environ::{
     BuiltinFunctionIndex, DefinedGlobalIndex, DefinedMemoryIndex, DefinedTableIndex, GetPtrSize,
     ModuleInternedTypeIndex, PtrSize as _, RuntimeDataIndex, StaticModuleIndex, VMOffsets,
@@ -314,7 +318,7 @@ pub struct AliasRegions<Offsets> {
     ///
     /// Avoids allocating a string for the debug formatting of `AliasRegionKey`
     /// as the `ir::AliasRegionData::description` string repeatedly.
-    cache: std::collections::HashMap<AliasRegionKey, ir::AliasRegion>,
+    cache: HashMap<AliasRegionKey, ir::AliasRegion>,
 }
 
 impl<Offsets> AliasRegions<Offsets> {
@@ -928,7 +932,7 @@ where
             pointer_type: ir::Type::int_with_byte_size(offsets.get_ptr_size().size().into())
                 .unwrap(),
             offsets,
-            cache: std::collections::HashMap::default(),
+            cache: HashMap::default(),
         }
     }
 

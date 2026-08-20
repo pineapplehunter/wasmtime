@@ -4975,6 +4975,7 @@ dependencies = [
  "object 0.40.0",
  "pulley-interpreter",
  "smallvec 1.15.1",
+ "spin",
  "target-lexicon 0.13.5",
  "thiserror 2.0.17",
  "wasmparser 0.254.0",

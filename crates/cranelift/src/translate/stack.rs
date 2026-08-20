@@ -4,11 +4,11 @@
 //! track of the WebAssembly value and control stacks during the translation of
 //! a single function.
 
+use alloc::vec::Vec;
 use cranelift_codegen::ir::{self, Block, ExceptionTag, Inst, Value};
 use cranelift_entity::SecondaryMap;
 use cranelift_frontend::{FunctionBuilder, Variable};
 use smallvec::SmallVec;
-use std::vec::Vec;
 use wasmtime_environ::FrameStackShape;
 
 /// Information about the presence of an associated `else` for an `if`, or the

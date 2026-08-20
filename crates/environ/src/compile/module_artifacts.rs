@@ -7,9 +7,9 @@ use crate::prelude::*;
 use crate::{
     CompiledModuleInfo, DebugInfoData, FunctionName, Metadata, ModuleTranslation, Tunables, obj,
 };
+use core::ops::Range;
 use object::SectionKind;
 use object::write::{Object, SectionId, StandardSegment, WritableBuffer};
-use std::ops::Range;
 
 /// Helper structure to create an ELF file as a compilation artifact.
 ///

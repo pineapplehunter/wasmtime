@@ -34,7 +34,7 @@ gimli = { workspace = true }
 object = { workspace = true }
 rustc-demangle = { version = "0.1.16", default-features = false, optional = true }
 target-lexicon = { workspace = true }
-wasm-encoder = { workspace = true, optional = true }
+wasm-encoder = { version = "0.254.0", default-features = false, optional = true }
 wasmprinter = { workspace = true, optional = true }
 wasmtime-component-util = { workspace = true, optional = true }
 wasmtime-core = { workspace = true, features = ['serde'] }
@@ -75,12 +75,11 @@ gc = []
 gc-drc = ["gc"]
 gc-null = ["gc"]
 gc-copying = ["gc"]
-compile = [
+compile = ["compile-core", "std", "dep:wasmprinter"]
+compile-core = [
   'gimli/write',
   'object/write_core',
-  'std',
   "dep:wasm-encoder",
-  "dep:wasmprinter",
 ]
 stack-switching = []
 threads = ['std']
@@ -93,6 +92,8 @@ std = [
   'wasmtime-core/std',
   'cpp_demangle?/std',
   'rustc-demangle?/std',
+  'wasm-encoder?/component-model',
+  'wasm-encoder?/std',
 ]
 rr = [
   "component-model"

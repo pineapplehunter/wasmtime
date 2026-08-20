@@ -64,19 +64,19 @@ pub use self::names::*;
 pub use self::types::*;
 pub use self::vmcomponent_offsets::*;
 
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 mod compiler;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 pub mod dfg;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 mod translate;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 mod types_builder;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 pub use self::compiler::*;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 pub use self::translate::*;
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 pub use self::types_builder::*;
 
 /// Helper macro, like `foreach_transcoder`, to iterate over builtins for

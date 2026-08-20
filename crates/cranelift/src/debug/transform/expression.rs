@@ -5,17 +5,20 @@ use crate::debug::transform::debug_transform_logging::{
     dbi_log_enabled, log_get_value_loc, log_get_value_name, log_get_value_ranges,
 };
 use crate::translate::get_vmctx_value_label;
+use alloc::{boxed::Box, rc::Rc, vec::Vec};
+use core::cmp::PartialEq;
 use core::fmt;
+use core::hash::{Hash, Hasher};
 use cranelift_codegen::LabelValueLoc;
 use cranelift_codegen::ValueLabelsRanges;
 use cranelift_codegen::ir::ValueLabel;
 use cranelift_codegen::isa::TargetIsa;
 use gimli::{Expression, Operation, Reader, ReaderOffset, write};
 use itertools::Itertools;
-use std::cmp::PartialEq;
+#[cfg(feature = "std")]
 use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
-use std::rc::Rc;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::{HashMap, HashSet};
 use wasmtime_environ::error::{Context, Error, Result};
 
 #[derive(Debug)]
@@ -388,7 +391,7 @@ impl CompiledExpression {
                                 }
                                 CompiledExpressionPart::Local { label, trailing } => {
                                     let loc =
-                                        *label_location.get(&label).context("label_location")?;
+                                        *label_location.get(label).context("label_location")?;
                                     if let Some(expr) = translate_loc(loc, isa, *trailing)? {
                                         code_buf.extend_from_slice(&expr)
                                     } else {
@@ -879,8 +882,8 @@ impl Hash for JumpTargetMarker {
         hasher.write_u32(*self.0);
     }
 }
-impl std::fmt::Debug for JumpTargetMarker {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
+impl core::fmt::Debug for JumpTargetMarker {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(
             f,
             "JumpMarker<{:08x}>",
@@ -897,6 +900,7 @@ mod tests {
         JumpTargetMarker, ValueLabel, ValueLabelsRanges, compile_expression,
     };
     use crate::CompiledFunctionMetadata;
+    use alloc::vec::Vec;
     use cranelift_codegen::{isa::lookup, settings::Flags};
     use gimli::{Encoding, EndianSlice, Expression, RunTimeEndian, constants};
     use target_lexicon::triple;
@@ -1276,7 +1280,10 @@ mod tests {
     fn create_mock_value_ranges() -> (ValueLabelsRanges, (ValueLabel, ValueLabel, ValueLabel)) {
         use cranelift_codegen::{LabelValueLoc, ValueLocRange};
         use cranelift_entity::EntityRef;
+        #[cfg(feature = "std")]
         use std::collections::HashMap;
+        #[cfg(all(feature = "embedded", not(feature = "std")))]
+        use wasmtime_environ::collections::oom_abort::HashMap;
         let mut value_ranges = HashMap::new();
         let value_0 = ValueLabel::new(0);
         let value_1 = ValueLabel::new(1);

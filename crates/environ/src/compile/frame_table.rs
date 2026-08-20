@@ -8,11 +8,14 @@
 //! operand stack depth in each frame by PC, with offsets to read
 //! those values off of the state in the stack frame.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::{HashMap, hash_map::Entry};
 use crate::{
     FrameInstPos, FrameStackShape, FrameStateSlotOffset, FrameTableDescriptorIndex, FrameValType,
     FuncKey, ModulePC, WasmHeapTopType, WasmValType, prelude::*,
 };
 use object::{LittleEndian, U32};
+#[cfg(feature = "std")]
 use std::collections::{HashMap, hash_map::Entry};
 
 /// Builder for a stackslot descriptor.

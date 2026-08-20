@@ -2,12 +2,13 @@
 //! Cranelift to generate code to run on the same machine.
 
 #![deny(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use cranelift_codegen::isa;
 use cranelift_codegen::settings::Configurable;
 use target_lexicon::Triple;
 
-#[cfg(all(target_arch = "riscv64", target_os = "linux"))]
+#[cfg(all(feature = "std", target_arch = "riscv64", target_os = "linux"))]
 mod riscv;
 
 /// Return an `isa` builder configured for the current host
@@ -43,7 +44,7 @@ pub fn builder_with_options(infer_native_flags: bool) -> Result<isa::Builder, &'
 /// useful when more than one backend exists for a given target
 /// (e.g., on x86-64).
 pub fn infer_native_flags(isa_builder: &mut dyn Configurable) -> Result<(), &'static str> {
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(all(feature = "std", target_arch = "x86_64"))]
     {
         if !std::is_x86_feature_detected!("sse2") {
             return Err("x86 support requires SSE2");
@@ -108,7 +109,7 @@ pub fn infer_native_flags(isa_builder: &mut dyn Configurable) -> Result<(), &'st
         }
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(feature = "std", target_arch = "aarch64"))]
     {
         if std::arch::is_aarch64_feature_detected!("lse") {
             isa_builder.enable("has_lse").unwrap();
@@ -172,7 +173,7 @@ pub fn infer_native_flags(isa_builder: &mut dyn Configurable) -> Result<(), &'st
 
     // `is_riscv_feature_detected` is nightly only for now, use
     // getauxval from the libc crate directly as a temporary measure.
-    #[cfg(all(target_arch = "riscv64", target_os = "linux"))]
+    #[cfg(all(feature = "std", target_arch = "riscv64", target_os = "linux"))]
     {
         // Try both hwcap and cpuinfo
         // HWCAP only returns single letter extensions, cpuinfo returns all of

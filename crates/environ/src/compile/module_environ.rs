@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::error::{OutOfMemory, Result, bail};
 use crate::module::{
     FuncRefIndex, Initializer, MemoryInitialization, Module, TableSegment, TableSegmentElements,
@@ -12,12 +14,16 @@ use crate::{
     WasmHeapTopType, WasmHeapType, WasmResult, WasmValType, WasmparserTypeConverter,
 };
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+use alloc::sync::Arc;
+use core::mem;
 use cranelift_entity::SecondaryMap;
 use cranelift_entity::packed_option::ReservedValue;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::mem;
+#[cfg(feature = "std")]
 use std::path::PathBuf;
-use std::sync::Arc;
 use wasmparser::{
     CustomSectionReader, DataKind, ElementItems, ElementKind, Encoding, ExternalKind,
     FuncToValidate, FunctionBody, KnownCustom, NameSectionReader, Naming, Parser, Payload, TypeRef,
@@ -303,7 +309,10 @@ pub struct NameSection<'a> {
 #[derive(Debug, Default)]
 #[expect(missing_docs, reason = "self-describing fields")]
 pub struct WasmFileInfo {
+    #[cfg(feature = "std")]
     pub path: Option<PathBuf>,
+    #[cfg(not(feature = "std"))]
+    pub path: Option<String>,
     pub code_section_offset: u64,
     pub imported_func_count: u32,
     pub funcs: Vec<FunctionMetadata>,
@@ -1369,13 +1378,13 @@ impl ModuleTranslation<'_> {
             // the front and back with extra zeros as necessary
             if offset % page_size != 0 {
                 let zero_padding = offset % page_size;
-                image.splice(0..0, std::iter::repeat(0).take(zero_padding as usize));
+                image.splice(0..0, core::iter::repeat(0).take(zero_padding as usize));
                 offset -= zero_padding;
                 len += zero_padding;
             }
             if len % page_size != 0 {
                 let zero_padding = page_size - (len % page_size);
-                image.extend(std::iter::repeat(0).take(zero_padding as usize));
+                image.extend(core::iter::repeat(0).take(zero_padding as usize));
                 len += zero_padding;
             }
             let runtime_index = if image.is_empty() {

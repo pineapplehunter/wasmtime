@@ -15,6 +15,8 @@
 //! it's important to note that some of the precise choices of control flow here
 //! can be somewhat arbitrary, an intentional decision.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::{
     CanonicalAbiInfo, ComponentTypesBuilder, FixedEncoding as FE, FlatType, InterfaceType,
     MAX_FLAT_ASYNC_PARAMS, MAX_FLAT_PARAMS, PREPARE_ASYNC_NO_RESULT, PREPARE_ASYNC_WITH_RESULT,
@@ -31,9 +33,10 @@ use crate::fact::{
 };
 use crate::prelude::*;
 use crate::{FuncIndex, GlobalIndex, IndexType, NUM_COMPONENT_CONTEXT_SLOTS, Trap};
+use core::mem;
+use core::ops::Range;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::mem;
-use std::ops::Range;
 use wasm_encoder::{BlockType, Catch, Encode, Instruction, Instruction::*, MemArg, ValType};
 use wasmtime_component_util::{DiscriminantSize, FlagsSize};
 
@@ -1354,7 +1357,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
                         .collect::<Vec<_>>();
                     for (ty, local) in tys.iter().zip(locals.into_iter().rev()) {
                         self.instruction(LocalGet(local.idx));
-                        self.stack_set(std::slice::from_ref(ty), local.ty);
+                        self.stack_set(core::slice::from_ref(ty), local.ty);
                         self.free_temp_local(local);
                     }
                 }
@@ -4667,7 +4670,7 @@ impl TempLocal {
     }
 }
 
-impl std::ops::Drop for TempLocal {
+impl core::ops::Drop for TempLocal {
     fn drop(&mut self) {
         if self.needs_free {
             panic!("temporary local not free'd");

@@ -4,13 +4,18 @@
 //! well as providing a function to return the default configuration to build.
 
 use crate::isa_builder::IsaBuilder;
+use alloc::{boxed::Box, string::ToString, sync::Arc, vec::Vec};
+use core::fmt;
 use cranelift_codegen::{
     CodegenResult,
     isa::{self, OwnedTargetIsa},
 };
-use std::fmt;
+#[cfg(feature = "std")]
 use std::path;
-use std::sync::Arc;
+#[cfg(feature = "std")]
+type ClifDir = path::PathBuf;
+#[cfg(not(feature = "std"))]
+type ClifDir = ();
 use target_lexicon::Triple;
 use wasmtime_environ::error::Result;
 use wasmtime_environ::{CacheStore, CompilerBuilder, Setting, Tunables};
@@ -21,7 +26,7 @@ struct Builder {
     emit_debug_checks: bool,
     linkopts: LinkOptions,
     cache_store: Option<Arc<dyn CacheStore>>,
-    clif_dir: Option<path::PathBuf>,
+    clif_dir: Option<ClifDir>,
     wmemcheck: bool,
 }
 
@@ -68,6 +73,7 @@ impl CompilerBuilder for Builder {
         self.inner.triple()
     }
 
+    #[cfg(feature = "std")]
     fn clif_dir(&mut self, path: &path::Path) -> Result<()> {
         self.clif_dir = Some(path.to_path_buf());
         Ok(())
