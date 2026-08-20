@@ -8,8 +8,9 @@ int invoke_wasmtime(const uint8_t *data, size_t len);
 ```
 
 which loads a WebAssembly module from a readable in-memory buffer of `len`
-bytes and runs its `_start` export. It returns zero on success, 1 for an invalid buffer, and 2
-when compilation, instantiation, or execution fails. Imports from
+bytes and runs its `_start` export. It returns zero on success, 1 for an
+invalid buffer, and 2 when compilation, instantiation, or execution fails. The
+C declarations are available in `include/wasmtime-lib.h`. Imports from
 `wasi_snapshot_preview1` and `env` are stubbed out and print via `printf`.
 
 The crate builds as a freestanding static library on targets without std
@@ -59,7 +60,11 @@ num called with '42'
 wasmtime invocation completed
 ```
 
-`sample.c` also implements the platform hooks the freestanding build needs
-(see `../docs/examples-minimal.md`): `wasmtime_tls_get`/`wasmtime_tls_set` and,
-because `custom-virtual-memory` is enabled, the `wasmtime_mmap_*`/`mprotect`/
-`page_size` functions.
+`sample.c` also implements the platform hooks the static library needs:
+
+- `wasmtime_alloc` and `wasmtime_free` provide heap allocation.
+- `wasmtime_log` handles informational output.
+- `wasmtime_panic_handler` reports a Rust panic and must not return.
+- `wasmtime_tls_get` and `wasmtime_tls_set` provide runtime TLS.
+- The `wasmtime_mmap_*`, `mprotect`, and `page_size` functions provide the
+  custom virtual-memory backend described in `../docs/examples-minimal.md`.

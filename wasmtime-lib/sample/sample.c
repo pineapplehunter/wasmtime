@@ -17,8 +17,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-/* Provided by the wasmtime-lib static library. */
-extern int invoke_wasmtime(const uint8_t *data, size_t len);
+#include "wasmtime-lib.h"
 
 /* ------------------------------------------------------------------ */
 /* Minimal platform hooks required by the no_std wasmtime build.       */
@@ -29,6 +28,17 @@ extern int invoke_wasmtime(const uint8_t *data, size_t len);
 #define WASMTIME_PROT_EXEC (1u << 2)
 
 struct wasmtime_memory_image;
+
+uint8_t *wasmtime_alloc(size_t size) { return malloc(size); }
+
+void wasmtime_free(uint8_t *ptr) { free(ptr); }
+
+void wasmtime_log(const char *message) { fputs(message, stdout); }
+
+_Noreturn void wasmtime_panic_handler(const char *message) {
+  fprintf(stderr, "\nPANIC!!!\n%s\n", message);
+  exit(1);
+}
 
 static int wasmtime_to_mmap_prot(uint32_t prot_flags) {
   int flags = 0;
@@ -78,6 +88,7 @@ int wasmtime_memory_image_new(const uint8_t *ptr, uintptr_t len,
 
 int wasmtime_memory_image_map_at(struct wasmtime_memory_image *image,
                                  uint8_t *addr, uintptr_t len) {
+  /* Unreachable because wasmtime_memory_image_new always returns NULL. */
   (void)image;
   (void)addr;
   (void)len;
@@ -85,6 +96,7 @@ int wasmtime_memory_image_map_at(struct wasmtime_memory_image *image,
 }
 
 void wasmtime_memory_image_free(struct wasmtime_memory_image *image) {
+  /* Unreachable because wasmtime_memory_image_new always returns NULL. */
   (void)image;
   abort();
 }
