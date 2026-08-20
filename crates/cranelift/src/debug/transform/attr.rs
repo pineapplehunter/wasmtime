@@ -1,5 +1,6 @@
 use crate::debug::Reader;
 use crate::debug::transform::utils::resolve_die_ref;
+use alloc::vec::Vec;
 
 use super::address_transform::AddressTransform;
 use super::dbi_log;

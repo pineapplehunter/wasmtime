@@ -3,9 +3,9 @@ use crate::bytes::write_uleb;
 use crate::obj::ELF_WASMTIME_TRAPS;
 use crate::prelude::*;
 use crate::trap_encoding::TRAP_BLOCK_SIZE;
+use core::ops::Range;
 use object::write::{Object, StandardSegment};
 use object::{LittleEndian, SectionKind, U32};
-use std::ops::Range;
 
 /// A helper structure to build the custom-encoded section of a wasmtime
 /// compilation image which encodes trap information.

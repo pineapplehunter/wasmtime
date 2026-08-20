@@ -111,7 +111,7 @@ pub trait Profiler {
 pub struct DefaultProfiler;
 
 #[cfg(not(feature = "timing"))]
-pub(crate) use disabled::*;
+pub use disabled::*;
 #[cfg(feature = "timing")]
 pub use enabled::*;
 
@@ -311,6 +311,29 @@ mod disabled {
     use super::{DefaultProfiler, Pass, Profiler};
     use alloc::boxed::Box;
     use core::any::Any;
+    use core::fmt;
+    use core::time::Duration;
+
+    /// Empty timing results used when pass timing is disabled.
+    pub struct PassTimes;
+
+    impl PassTimes {
+        /// Returns zero because timing is disabled.
+        pub fn total(&self) -> Duration {
+            Duration::ZERO
+        }
+    }
+
+    impl fmt::Display for PassTimes {
+        fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Ok(())
+        }
+    }
+
+    /// Returns empty timing results when pass timing is disabled.
+    pub fn take_current() -> PassTimes {
+        PassTimes
+    }
 
     impl Profiler for DefaultProfiler {
         fn start_pass(&self, _pass: Pass) -> Box<dyn Any> {

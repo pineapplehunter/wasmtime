@@ -24,6 +24,8 @@
 //! An instantiation's arguments are always exports of instances created before
 //! it, so the DFG is a DAG and one pass reaches the fixpoint.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::{HashMap, hash_map::Entry};
 use crate::compile::ModuleTranslation;
 use crate::component::ExportItem;
 use crate::component::dfg::{
@@ -33,8 +35,8 @@ use crate::prelude::*;
 use crate::union_find::UnionFind;
 use crate::{EntityIndex, EntityRef, FuncIndex, PrimaryMap, SecondaryMap, StaticModuleIndex};
 use core::mem;
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
+#[cfg(feature = "std")]
+use std::collections::{HashMap, hash_map::Entry};
 
 /// An identity for the `vmctx` that a core definition's `VMFuncRef` carries.
 ///

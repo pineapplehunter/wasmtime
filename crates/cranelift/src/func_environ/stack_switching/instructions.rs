@@ -1,6 +1,7 @@
 use crate::func_environ::gc;
 use crate::translate::set_block_params;
 use crate::trap::TranslateTrap;
+use alloc::vec::Vec;
 use cranelift_codegen::ir::BlockArg;
 use cranelift_codegen::ir::condcodes::*;
 use cranelift_codegen::ir::types::*;
@@ -84,6 +85,7 @@ use super::fatpointer;
 
 /// This module contains compile-time counterparts to types defined elsewhere.
 pub(crate) mod stack_switching_helpers {
+    use alloc::vec::Vec;
     use core::marker::PhantomData;
     use cranelift_codegen::ir;
     use cranelift_codegen::ir::InstBuilder;
@@ -2162,9 +2164,9 @@ pub(crate) fn translate_suspend<'a>(
     // We stack allocate enough room for the suspend arguments and the
     // return values including the possible exception reference.
     let values = active_contref.values(env, builder);
-    let required_capacity = u32::try_from(std::cmp::max(
+    let required_capacity = u32::try_from(core::cmp::max(
         1, // This accounts for the possible exception reference.
-        std::cmp::max(suspend_args.len(), tag_return_types.len()),
+        core::cmp::max(suspend_args.len(), tag_return_types.len()),
     ))
     .expect("Number of stack switching payloads should fit in u32");
 
@@ -2294,7 +2296,7 @@ pub(crate) fn translate_switch<'a>(
         // the return values including the possible exception
         // reference.
         let values = switcher_contref.values(env, builder);
-        let required_capacity = u32::try_from(std::cmp::max(1, return_types.len())).unwrap();
+        let required_capacity = u32::try_from(core::cmp::max(1, return_types.len())).unwrap();
         let existing_storage = env.stack_switching.values_storage;
         env.stack_switching.values_storage = Some(values.prepare_stack_storage(
             env,

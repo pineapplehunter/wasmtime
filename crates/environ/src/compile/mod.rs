@@ -7,13 +7,14 @@ use crate::{
     DefinedFuncIndex, FlagValue, FuncKey, FunctionLoc, ObjectKind, PrimaryMap, StaticModuleIndex,
     TripleExt, Tunables, WasmError, obj,
 };
+use alloc::borrow::Cow;
+use alloc::sync::Arc;
+use core::any::Any;
+use core::fmt;
 use object::write::{Object, SymbolId};
 use object::{Architecture, BinaryFormat, FileFlags};
-use std::any::Any;
-use std::borrow::Cow;
-use std::fmt;
+#[cfg(feature = "std")]
 use std::path;
-use std::sync::Arc;
 
 mod address_map;
 mod frame_table;
@@ -76,7 +77,7 @@ impl core::error::Error for CompileError {
 /// In theory, this could just be Cranelift's `CacheKvStore` trait, but it is not as we want to
 /// make sure that wasmtime isn't too tied to Cranelift internals (and as a matter of fact, we
 /// can't depend on the Cranelift trait here).
-pub trait CacheStore: Send + Sync + std::fmt::Debug {
+pub trait CacheStore: Send + Sync + fmt::Debug {
     /// Try to retrieve an arbitrary cache key entry, and returns a reference to bytes that were
     /// inserted via `Self::insert` before.
     fn get(&self, key: &[u8]) -> Option<Cow<'_, [u8]>>;
@@ -96,6 +97,7 @@ pub trait CompilerBuilder: Send + Sync + fmt::Debug {
     fn target(&mut self, target: target_lexicon::Triple) -> Result<()>;
 
     /// Enables clif output in the directory specified.
+    #[cfg(feature = "std")]
     fn clif_dir(&mut self, _path: &path::Path) -> Result<()> {
         bail!("clif output not supported");
     }

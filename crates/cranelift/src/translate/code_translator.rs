@@ -81,6 +81,7 @@ use crate::translate::translation_utils::{
     block_with_params, blocktype_params_results, f32_translation, f64_translation, set_block_params,
 };
 use crate::trap::TranslateTrap;
+use alloc::vec::Vec;
 use cranelift_codegen::ir::condcodes::{FloatCC, IntCC};
 use cranelift_codegen::ir::immediates::Offset32;
 use cranelift_codegen::ir::{
@@ -91,9 +92,11 @@ use cranelift_codegen::packed_option::ReservedValue;
 use cranelift_frontend::{FunctionBuilder, Variable};
 use itertools::Itertools;
 use smallvec::{SmallVec, ToSmallVec};
+#[cfg(feature = "std")]
 use std::collections::{HashMap, hash_map};
-use std::vec::Vec;
 use wasmparser::{FuncValidator, MemArg, Operator, WasmModuleResources};
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::{HashMap, hash_map};
 use wasmtime_environ::{
     DataIndex, ElemIndex, FuncIndex, GlobalIndex, MemoryIndex, TableIndex, TagIndex, TypeConvert,
     TypeIndex, WasmHeapType, WasmRefType, WasmResult, WasmValType, wasm_unsupported,

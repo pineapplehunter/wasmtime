@@ -1,5 +1,6 @@
 use crate::debug::Compilation;
 pub use crate::debug::transform::transform_dwarf;
+use alloc::vec::Vec;
 use cranelift_codegen::ir::Endianness;
 use cranelift_codegen::isa::{
     TargetIsa,
@@ -58,7 +59,7 @@ fn emit_dwarf_sections(
             return Ok(());
         }
         let mut relocs = vec![];
-        ::std::mem::swap(&mut relocs, &mut s.relocs);
+        ::core::mem::swap(&mut relocs, &mut s.relocs);
         result.push(DwarfSection { name, body, relocs });
         Ok(())
     })?;

@@ -5,6 +5,12 @@ use crate::func_environ::FuncEnvironment;
 use crate::translate::{FuncTranslator, VmctxLoadChain};
 use crate::{BuiltinFunctionSignatures, builder::LinkOptions, wasm_call_signature};
 use crate::{CompiledFunction, ModuleTextBuilder, array_call_signature};
+use alloc::borrow::Cow;
+use alloc::sync::Arc;
+use core::any::Any;
+use core::cmp;
+use core::mem;
+use core::ops::Range;
 use cranelift_codegen::binemit::CodeOffset;
 use cranelift_codegen::cursor::FuncCursor;
 use cranelift_codegen::inline::InlineCommand;
@@ -26,14 +32,20 @@ use cranelift_entity::PrimaryMap;
 use cranelift_frontend::FunctionBuilder;
 use object::write::{Object, StandardSegment, SymbolId};
 use object::{RelocationEncoding, RelocationFlags, RelocationKind, SectionKind};
-use std::any::Any;
-use std::borrow::Cow;
-use std::cmp;
+#[cfg(not(feature = "std"))]
+use spin::{Mutex, MutexGuard};
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::mem;
-use std::ops::Range;
+#[cfg(feature = "std")]
 use std::path;
-use std::sync::{Arc, Mutex};
+#[cfg(feature = "std")]
+use std::sync::{Mutex, MutexGuard};
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashMap;
+#[cfg(feature = "std")]
+type ClifDir = path::PathBuf;
+#[cfg(not(feature = "std"))]
+type ClifDir = ();
 use wasmparser::{FuncValidatorAllocations, FunctionBody};
 use wasmtime_environ::error::{Context as _, Result};
 use wasmtime_environ::obj::{ELF_WASMTIME_EXCEPTIONS, ELF_WASMTIME_FRAMES};
@@ -88,8 +100,22 @@ pub struct Compiler {
     emit_debug_checks: bool,
     linkopts: LinkOptions,
     cache_store: Option<Arc<dyn CacheStore>>,
-    clif_dir: Option<path::PathBuf>,
+    #[cfg(feature = "std")]
+    clif_dir: Option<ClifDir>,
     pub(crate) wmemcheck: bool,
+}
+
+impl Compiler {
+    fn lock_contexts(&self) -> MutexGuard<'_, Vec<Box<CompilerContext>>> {
+        #[cfg(feature = "std")]
+        {
+            self.contexts.lock().unwrap()
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            self.contexts.lock()
+        }
+    }
 }
 
 impl Drop for Compiler {
@@ -100,7 +126,7 @@ impl Drop for Compiler {
 
         let mut num_hits = 0;
         let mut num_cached = 0;
-        for ctx in self.contexts.lock().unwrap().iter() {
+        for ctx in self.lock_contexts().iter() {
             if let Some(ref cache_ctx) = ctx.incremental_cache_ctx {
                 num_hits += cache_ctx.num_hits;
                 num_cached += cache_ctx.num_cached;
@@ -127,7 +153,7 @@ impl Compiler {
         cache_store: Option<Arc<dyn CacheStore>>,
         emit_debug_checks: bool,
         linkopts: LinkOptions,
-        clif_dir: Option<path::PathBuf>,
+        _clif_dir: Option<ClifDir>,
         wmemcheck: bool,
     ) -> Compiler {
         let _ = wmemcheck;
@@ -138,7 +164,8 @@ impl Compiler {
             emit_debug_checks,
             linkopts,
             cache_store,
-            clif_dir,
+            #[cfg(feature = "std")]
+            clif_dir: _clif_dir,
             wmemcheck,
         }
     }
@@ -472,7 +499,7 @@ fn box_dyn_any_compiler_context(ctx: Option<Box<CompilerContext>>) -> Box<dyn An
 fn box_dyn_any(x: impl Any + Send + Sync) -> Box<dyn Any + Send + Sync> {
     log::trace!(
         "making Box<dyn Any + Send + Sync> of {}",
-        std::any::type_name_of_val(&x)
+        core::any::type_name_of_val(&x)
     );
     let b = Box::new(x);
     let r: &(dyn Any + Sync + Send) = &*b;
@@ -961,7 +988,7 @@ impl wasmtime_environ::Compiler for Compiler {
     }
 
     fn release_caches(&self) {
-        *self.contexts.lock().unwrap() = Vec::new();
+        *self.lock_contexts() = Vec::new();
     }
 }
 
@@ -1109,7 +1136,7 @@ impl InliningCompiler for Compiler {
 struct CraneliftCacheStore(Arc<dyn CacheStore>);
 
 impl cranelift_codegen::incremental_cache::CacheKvStore for CraneliftCacheStore {
-    fn get(&self, key: &[u8]) -> Option<std::borrow::Cow<'_, [u8]>> {
+    fn get(&self, key: &[u8]) -> Option<Cow<'_, [u8]>> {
         self.0.get(key)
     }
     fn insert(&mut self, key: &[u8], val: Vec<u8>) {
@@ -1299,7 +1326,7 @@ impl Compiler {
     }
 
     fn function_compiler(&self) -> FunctionCompiler<'_> {
-        let saved_context = self.contexts.lock().unwrap().pop();
+        let saved_context = self.lock_contexts().pop();
         FunctionCompiler {
             compiler: self,
             cx: saved_context
@@ -1656,7 +1683,7 @@ impl FunctionCompiler<'_> {
     fn finish_with_info(
         mut self,
         body_and_tunables: Option<(&FunctionBody<'_>, &Tunables)>,
-        symbol: &str,
+        _symbol: &str,
     ) -> Result<CompiledFunction, CompileError> {
         let context = &mut self.cx.codegen_context;
         let isa = &*self.compiler.isa;
@@ -1669,16 +1696,17 @@ impl FunctionCompiler<'_> {
         let compilation_result =
             compile_maybe_cached(context, isa, self.cx.incremental_cache_ctx.as_mut());
 
+        #[cfg(feature = "std")]
         if let Some(path) = &self.compiler.clif_dir {
             use std::io::Write;
 
-            let mut path = path.join(symbol.replace(":", "-"));
+            let mut path = path.join(_symbol.replace(":", "-"));
             path.set_extension("clif");
 
             let mut output = std::fs::File::create(path).unwrap();
             write!(
                 output,
-                ";; Intermediate Representation of function <{symbol}>:\n",
+                ";; Intermediate Representation of function <{_symbol}>:\n",
             )
             .unwrap();
             write!(output, "{}", context.func.display()).unwrap();
@@ -1748,7 +1776,7 @@ impl FunctionCompiler<'_> {
             }
         }
 
-        self.compiler.contexts.lock().unwrap().push(self.cx);
+        self.compiler.lock_contexts().push(self.cx);
 
         Ok(compiled_function)
     }

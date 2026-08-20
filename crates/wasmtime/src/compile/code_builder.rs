@@ -1,7 +1,10 @@
 use crate::Engine;
 use crate::prelude::*;
-use std::borrow::Cow;
+use alloc::borrow::Cow;
+#[cfg(feature = "std")]
 use std::path::Path;
+#[cfg(not(feature = "std"))]
+type Path = str;
 
 #[cfg(feature = "compile-time-builtins")]
 use crate::hash_map::HashMap;
@@ -110,6 +113,7 @@ impl<'a> CodeBuilder<'a> {
         self.wasm = Some(wasm_bytes.into());
         self.wasm_path = wasm_path.map(|p| p.into());
 
+        #[cfg(feature = "std")]
         if self.wasm_path.is_some() {
             self.dwarf_package_from_wasm_path()?;
         }
@@ -166,6 +170,7 @@ impl<'a> CodeBuilder<'a> {
     ///
     /// If DWARF fusion is performed and the DWARF packaged file cannot be read
     /// then an error will be returned.
+    #[cfg(feature = "std")]
     pub fn wasm_binary_file(&mut self, file: &'a Path) -> Result<&mut Self> {
         let wasm = std::fs::read(file)
             .with_context(|| format!("failed to read input file: {}", file.display()))?;
@@ -184,6 +189,7 @@ impl<'a> CodeBuilder<'a> {
     ///
     /// In addition to the errors returned by [`CodeBuilder::wasm_binary_file`]
     /// this may also fail if the text format is read and the syntax is invalid.
+    #[cfg(feature = "std")]
     pub fn wasm_binary_or_text_file(&mut self, file: &'a Path) -> Result<&mut Self> {
         #[cfg(feature = "wat")]
         {
@@ -716,6 +722,7 @@ impl<'a> CodeBuilder<'a> {
     /// [`CodeBuilder::wasm_binary_file`].
     ///
     /// This method will also return an error if `file` cannot be read.
+    #[cfg(feature = "std")]
     pub fn dwarf_package_file(&mut self, file: &Path) -> Result<&mut Self> {
         if self.dwarf_package.is_some() {
             bail!("cannot call `dwarf_package` or `dwarf_package_file` twice");
@@ -729,6 +736,7 @@ impl<'a> CodeBuilder<'a> {
         Ok(self)
     }
 
+    #[cfg(feature = "std")]
     fn dwarf_package_from_wasm_path(&mut self) -> Result<&mut Self> {
         let dwarf_package_path_buf = self.wasm_path.as_ref().unwrap().with_extension("dwp");
         if dwarf_package_path_buf.exists() {
@@ -845,8 +853,8 @@ impl<'a> CodeBuilder<'a> {
 /// of this hash dictate when artifacts are or aren't re-used.
 pub struct HashedEngineCompileEnv<'a>(pub &'a Engine);
 
-impl std::hash::Hash for HashedEngineCompileEnv<'_> {
-    fn hash<H: std::hash::Hasher>(&self, hasher: &mut H) {
+impl core::hash::Hash for HashedEngineCompileEnv<'_> {
+    fn hash<H: core::hash::Hasher>(&self, hasher: &mut H) {
         // Hash the compiler's state based on its target and configuration.
         if let Some(compiler) = self.0.compiler() {
             compiler.triple().hash(hasher);

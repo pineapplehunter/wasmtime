@@ -112,7 +112,7 @@ impl ModuleTypes {
 }
 
 /// Methods that only exist for `ModuleTypesBuilder`.
-#[cfg(feature = "compile")]
+#[cfg(any(feature = "compile", feature = "compile-core"))]
 impl ModuleTypes {
     /// Associate `trampoline_ty` as the trampoline type for `for_ty`.
     pub fn set_trampoline_type(

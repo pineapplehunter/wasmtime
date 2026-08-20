@@ -410,7 +410,7 @@ impl FrameInstPos {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct FrameStateSlotOffset(pub(crate) u32);
 impl FrameStateSlotOffset {
-    #[cfg(feature = "compile")]
+    #[cfg(any(feature = "compile", feature = "compile-core"))]
     pub(crate) fn add(self, offset: u32) -> FrameStateSlotOffset {
         FrameStateSlotOffset(self.0 + offset)
     }
@@ -439,7 +439,7 @@ pub enum FrameValType {
 }
 
 impl FrameValType {
-    #[cfg(feature = "compile")]
+    #[cfg(any(feature = "compile", feature = "compile-core"))]
     pub(crate) fn storage_size(&self, pointer_size: u32) -> u32 {
         match self {
             FrameValType::I32 => 4,

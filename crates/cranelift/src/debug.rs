@@ -10,10 +10,14 @@
 )]
 
 use crate::CompiledFunctionMetadata;
+use alloc::vec::Vec;
 use core::fmt;
 use cranelift_codegen::isa::TargetIsa;
 use object::write::SymbolId;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
+#[cfg(all(feature = "embedded", not(feature = "std")))]
+use wasmtime_environ::collections::oom_abort::HashMap;
 use wasmtime_environ::{
     DefinedFuncIndex, DefinedMemoryIndex, EntityRef, MemoryIndex, ModuleTranslation,
     OwnedMemoryIndex, PrimaryMap, PtrSize, StaticModuleIndex, Tunables, VMOffsets,

@@ -67,11 +67,14 @@
 //! For more details on fiddly bits see the documentation on various fields and
 //! methods below.
 
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::component::{
     AbstractResourceIndex, ComponentTypes, ResourceIndex, RuntimeComponentInstanceIndex,
     TypeResourceTable, TypeResourceTableIndex,
 };
 use crate::prelude::*;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
 use wasmparser::component_types::{ComponentAnyTypeId, ComponentEntityType, ResourceId};
 use wasmparser::types::TypesRef;

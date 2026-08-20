@@ -1,4 +1,7 @@
+#[cfg(not(feature = "std"))]
+use crate::collections::oom_abort::HashMap;
 use crate::prelude::*;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
 use wasm_encoder::{TypeSection, ValType};
 

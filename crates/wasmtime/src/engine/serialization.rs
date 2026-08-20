@@ -26,7 +26,7 @@ use crate::{Engine, ModuleVersionStrategy, Precompiled};
 use core::fmt;
 use core::str::FromStr;
 use object::endian::Endianness;
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 use object::write::{Object, StandardSegment};
 use object::{
     FileFlags, Object as _,
@@ -127,7 +127,7 @@ pub fn check_compatible(engine: &Engine, mmap: &[u8], expected: ObjectKind) -> R
     postcard::from_bytes::<Metadata<'_>>(data)?.check_compatible(engine)
 }
 
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 pub fn append_compiler_info(engine: &Engine, obj: &mut Object<'_>, metadata: &Metadata<'_>) {
     let section = obj.add_section(
         obj.segment_name(StandardSegment::Data).to_vec(),
@@ -189,7 +189,7 @@ pub struct Metadata<'a> {
 }
 
 impl Metadata<'_> {
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub fn new(engine: &Engine) -> Result<Metadata<'static>> {
         let compiler = engine.try_compiler()?;
         Ok(Metadata {

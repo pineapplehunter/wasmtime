@@ -1,5 +1,6 @@
 use super::address_transform::AddressTransform;
 use crate::debug::Reader;
+use alloc::vec::Vec;
 use gimli::write;
 use wasmtime_environ::error::Error;
 

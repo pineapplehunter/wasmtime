@@ -10,7 +10,7 @@ use alloc::sync::Arc;
 use core::ptr::NonNull;
 #[cfg(target_has_atomic = "64")]
 use core::sync::atomic::{AtomicU64, Ordering};
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 use object::write::{Object, StandardSegment};
 #[cfg(feature = "std")]
 use std::{fs::File, path::Path};
@@ -68,7 +68,7 @@ struct EngineInner {
     config: Config,
     features: WasmFeatures,
     tunables: Tunables,
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     compiler: Option<Box<dyn wasmtime_environ::Compiler>>,
     #[cfg(feature = "runtime")]
     allocator: Box<dyn crate::runtime::vm::InstanceAllocator + Send + Sync>,
@@ -140,14 +140,14 @@ impl Engine {
             }
         }
 
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         let (config, compiler) = if config.has_compiler() {
             let (config, compiler) = config.build_compiler(&mut tunables, features)?;
             (config, Some(compiler))
         } else {
             (config.clone(), None)
         };
-        #[cfg(not(any(feature = "cranelift", feature = "winch")))]
+        #[cfg(not(any(has_cranelift, feature = "winch")))]
         let _ = &mut tunables;
 
         #[cfg(feature = "runtime")]
@@ -157,7 +157,7 @@ impl Engine {
 
         Ok(Engine {
             inner: try_new::<Arc<_>>(EngineInner {
-                #[cfg(any(feature = "cranelift", feature = "winch"))]
+                #[cfg(any(has_cranelift, feature = "winch"))]
                 compiler,
                 #[cfg(feature = "runtime")]
                 allocator: {
@@ -234,7 +234,7 @@ impl Engine {
             .collect::<Result<Vec<B>, E>>()
     }
 
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub(crate) fn run_maybe_parallel_mut<
         T: Send,
         E: Send,
@@ -390,7 +390,7 @@ impl Engine {
             ));
         }
 
-        #[cfg(any(feature = "cranelift", feature = "winch"))]
+        #[cfg(any(has_cranelift, feature = "winch"))]
         {
             if let Some(compiler) = self.compiler() {
                 // Also double-check all compiler settings
@@ -690,7 +690,7 @@ information about this check\
     }
 }
 
-#[cfg(any(feature = "cranelift", feature = "winch"))]
+#[cfg(any(has_cranelift, feature = "winch"))]
 impl Engine {
     pub(crate) fn compiler(&self) -> Option<&dyn wasmtime_environ::Compiler> {
         self.inner.compiler.as_deref()
@@ -749,7 +749,7 @@ impl Engine {
         Ok(())
     }
 
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
+    #[cfg(any(has_cranelift, feature = "winch"))]
     pub(crate) fn append_bti(&self, obj: &mut Object<'_>) {
         let section = obj.add_section(
             obj.segment_name(StandardSegment::Data).to_vec(),
@@ -862,7 +862,7 @@ impl Engine {
         self.inner.profiler.as_ref()
     }
 
-    #[cfg(all(feature = "cache", any(feature = "cranelift", feature = "winch")))]
+    #[cfg(all(feature = "cache", any(has_cranelift, feature = "winch")))]
     pub(crate) fn cache(&self) -> Option<&wasmtime_cache::Cache> {
         self.config().cache.as_ref()
     }
@@ -922,8 +922,8 @@ impl Engine {
     /// are compatible with a different [`Engine`] instance only if the two engines use
     /// compatible [`Config`]s. If this Hash matches between two [`Engine`]s then binaries
     /// from one are guaranteed to deserialize in the other.
-    #[cfg(any(feature = "cranelift", feature = "winch"))]
-    pub fn precompile_compatibility_hash(&self) -> impl std::hash::Hash + '_ {
+    #[cfg(any(has_cranelift, feature = "winch"))]
+    pub fn precompile_compatibility_hash(&self) -> impl core::hash::Hash + '_ {
         crate::compile::HashedEngineCompileEnv(self)
     }
 

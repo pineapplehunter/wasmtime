@@ -20,7 +20,7 @@ target-lexicon = { workspace = true, features = ["std"] }
 # In the next iteration we'll factor out the common bits so that they can be consumed
 # by Cranelift and Winch.
 cranelift-codegen = { workspace = true, features = ["unwind"] }
-regalloc2 = { workspace = true }
+regalloc2 = { workspace = true, features = ["std"] }
 cranelift-assembler-x64 = { workspace = true }
 gimli = { workspace = true }
 wasmtime-environ = { workspace = true }

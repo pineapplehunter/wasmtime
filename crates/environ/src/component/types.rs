@@ -403,7 +403,7 @@ macro_rules! impl_index {
             }
         }
 
-        #[cfg(feature = "compile")]
+        #[cfg(any(feature = "compile", feature = "compile-core"))]
         impl core::ops::Index<$ty> for super::ComponentTypesBuilder {
             type Output = $output;
             #[inline]
