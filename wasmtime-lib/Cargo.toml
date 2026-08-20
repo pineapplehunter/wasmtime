@@ -1,0 +1,26 @@
+[package]
+name = "wasmtime-lib"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+test = false
+
+[lints]
+workspace = true
+
+[features]
+std = ["wasmtime/std"]
+
+[dependencies]
+anyhow = { workspace = true }
+
+[target.'cfg(target_os = "none")'.dependencies]
+wasmtime = { workspace = true, features = ["runtime", "embedded-cranelift", "custom-virtual-memory"] }
+
+[target.'cfg(not(target_os = "none"))'.dependencies]
+wasmtime = { workspace = true, features = ["runtime", "cranelift", "custom-virtual-memory", "std"] }
