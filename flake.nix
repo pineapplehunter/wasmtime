@@ -27,12 +27,22 @@
               targets = [
                 "aarch64-unknown-none"
                 "riscv64gc-unknown-none-elf"
+                "wasm32-unknown-unknown"
+                "wasm32-wasip1"
+                "wasm32-wasip2"
               ];
             })
             pkgs.pkgsCross.aarch64-multiplatform.stdenv.cc
             pkgs.qemu
             pkgs.wabt
           ];
+          # The cross compiler's setup hook otherwise makes it the default C
+          # compiler, which breaks normal host builds in this shell.
+          shellHook = ''
+            export CC=cc
+            export CXX=c++
+            export AR=ar
+          '';
         };
       };
     };
